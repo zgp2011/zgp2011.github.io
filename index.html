@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>手机跑酷游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: manipulation;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            overflow: hidden;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            height: 600px;
+            background-color: #0a0a2a;
+            overflow: hidden;
+        }
+        
+        #start-screen, #game-over-screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(10, 10, 42, 0.9);
+            z-index: 10;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        #game-over-screen {
+            display: none;
+        }
+        
+        h1 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: #4fc3f7;
+        }
+        
+        p {
+            font-size: 16px;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+        
+        button {
+            padding: 15px 40px;
+            font-size: 18px;
+            background: #4facfe;
+            border: none;
+            border-radius: 25px;
+            color: white;
+            cursor: pointer;
+        }
+        #game-screen {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: none;
+}
+
+#score {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: white;
+    font-size: 24px;
+    z-index: 5;
+}
+
+#player {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background-color: #4fc3f7;
+    border-radius: 50%;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+}
+
+.obstacle {
+    position: absolute;
+    background-color: #ff5252;
+    border-radius: 5px;
+    z-index: 1;
+}
+
+.ground {
+    position: absolute;
+    width: 100%;
+    height: 20px;
+    background-color: #2e7d32;
+    bottom: 100px;
+    z-index: 1;
+}
+
+.controls {
+    position: absolute;
+    bottom: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    padding: 0 40px;
+}
+
+.control-btn {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 30px;
+    color: white;
+    user-select: none;
+}
+</style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="start-screen">
+            <h1>手机跑酷</h1>
+            <p>点击左右按钮控制移动<br>躲避红色障碍物</p>
+            <button id="start-button">开始游戏</button>
+        </div>
+        
+        <div id="game-screen">
+            <div id="score">得分: 0</div>
+            <div id="player"></div>
+            <div class="ground"></div>
+            <div class="controls">
+                <div class="control-btn" id="left-btn">←</div>
+                <div class="control-btn" id="right-btn">→</div>
+            </div>
+        </div>
+        
+        <div id="game-over-screen">
+            <h1>游戏结束</h1>
+            <p id="final-score">你的得分: 0</p>
+            <button id="restart-button">再玩一次</button>
+        </div>
+    </div>
+
+    <script>
+        // 游戏变量
+        let score = 0;
+        let gameSpeed = 5;
+        let isGameOver = false;
+        let obstacles = [];
+        let gameInterval;
+        let obstacleInterval;
+        
+        // DOM元素
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const startButton = document.getElementById('start-button');
+        const restartButton = document.getElementById('restart-button');
+        const scoreDisplay = document.getElementById('score');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const player = document.getElementById('player');
+        const leftBtn = document.getElementById('left-btn');
+        const rightBtn = document.getElementById('right-btn');
+        // 开始游戏
+startButton.addEventListener('click', startGame);
+restartButton.addEventListener('click', restartGame);
+
+// 触摸控制
+leftBtn.addEventListener('touchstart', moveLeft);
+rightBtn.addEventListener('touchstart', moveRight);
+
+// 也支持鼠标点击
+leftBtn.addEventListener('mousedown', moveLeft);
+rightBtn.addEventListener('mousedown', moveRight);
+
+function moveLeft() {
+    if (isGameOver) return;
+    const playerLeft = parseInt(player.style.left || 200);
+    if (playerLeft > 20) {
+        player.style.left = (playerLeft - 25) + 'px';
+    }
+}
+
+function moveRight() {
+    if (isGameOver) return;
+    const playerLeft = parseInt(player.style.left || 200);
+    const containerWidth = 400;
+    if (playerLeft < containerWidth - 60) {
+        player.style.left = (playerLeft + 25) + 'px';
+    }
+}
+
+function startGame() {
+    startScreen.style.display = 'none';
+    gameScreen.style.display = 'block';
+    
+    // 重置游戏状态
+    score = 0;
+    gameSpeed = 5;
+    isGameOver = false;
+    obstacles = [];
+    scoreDisplay.textContent = '得分: 0';
+    player.style.left = '200px';
+    
+    // 启动游戏循环
+    gameInterval = setInterval(updateGame, 50);
+    obstacleInterval = setInterval(createObstacle, 1200);
+}
+
+function createObstacle() {
+    if (isGameOver) return;
+    
+    const obstacle = document.createElement('div');
+    obstacle.className = 'obstacle';
+    
+    const width = Math.floor(Math.random() * 80) + 40;
+    const left = Math.floor(Math.random() * (400 - width));
+    
+    obstacle.style.width = width + 'px';
+    obstacle.style.height = '25px';
+    obstacle.style.left = left + 'px';
+    obstacle.style.top = '-25px';
+    
+    gameScreen.appendChild(obstacle);
+    obstacles.push(obstacle);
+}
+function updateGame() {
+            if (isGameOver) return;
+            
+            score++;
+            scoreDisplay.textContent = '得分: ' + score;
+            
+            if (score % 100 === 0) {
+                gameSpeed += 0.5;
+            }
+            
+            obstacles.forEach((obstacle, index) => {
+                const top = parseInt(obstacle.style.top);
+                obstacle.style.top = (top + gameSpeed) + 'px';
+                
+                if (checkCollision(player, obstacle)) {
+                    gameOver();
+                }
+                
+                if (top > 600) {
+                    gameScreen.removeChild(obstacle);
+                    obstacles.splice(index, 1);
+                }
+            });
+        }
+        
+        function checkCollision(player, obstacle) {
+            const playerRect = player.getBoundingClientRect();
+            const obstacleRect = obstacle.getBoundingClientRect();
+            
+            return !(
+                playerRect.right < obstacleRect.left ||
+                playerRect.left > obstacleRect.right ||
+                playerRect.bottom < obstacleRect.top ||
+                playerRect.top > obstacleRect.bottom
+            );
+        }
+        
+        function gameOver() {
+            isGameOver = true;
+            clearInterval(gameInterval);
+            clearInterval(obstacleInterval);
+            
+            gameScreen.style.display = 'none';
+            gameOverScreen.style.display = 'flex';
+            finalScoreDisplay.textContent = '你的得分: ' + score;
+        }
+        
+        function restartGame() {
+            obstacles.forEach(obstacle => {
+                if (obstacle.parentNode) {
+                    gameScreen.removeChild(obstacle);
+                }
+            });
+            obstacles = [];
+            startGame();
+        }
+    </script>
+</body>
+</html>
