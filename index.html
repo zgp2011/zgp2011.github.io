@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>植物大战僵尸 - 横屏版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: manipulation;
+        }
+        
+        body {
+            background: linear-gradient(to bottom, #4a752c, #315a1e);
+            font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif;
+            color: white;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            height: 100%;
+            max-height: 450px;
+            margin: 0 auto;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        #game-canvas {
+            background-color: #4a752c;
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(to bottom, #4a752c, #315a1e);
+            z-index: 10;
+            padding: 20px;
+        }
+        
+        .title {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 0 #000;
+            color: #ffde00;
+            text-align: center;
+        }
+        
+        .subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 0 #000;
+            color: #fff;
+            text-align: center;
+        }
+        
+        .btn {
+            background: linear-gradient(to bottom, #ffde00, #e6c200);
+            border: none;
+            border-radius: 50px;
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #8b6914;
+            cursor: pointer;
+            margin: 10px;
+            box-shadow: 0 5px 0 #8b6914;
+            transition: all 0.1s;
+            min-width: 180px;
+            text-align: center;
+        }
+        
+        .btn:hover, .btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 3px 0 #8b6914;
+        }
+      .btn-level {
+            background: linear-gradient(to bottom, #6aa84f, #4a752c);
+            color: white;
+            box-shadow: 0 5px 0 #315a1e;
+        }
+        
+        .btn-level:hover, .btn-level:active {
+            box-shadow: 0 3px 0 #315a1e;
+        }
+        
+        .btn-back {
+            background: linear-gradient(to bottom, #cccccc, #999999);
+            color: #333;
+            box-shadow: 0 5px 0 #666;
+        }
+        
+        .btn-back:hover, .btn-back:active {
+            box-shadow: 0 3px 0 #666;
+        }
+        
+        .game-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 10px;
+            z-index: 5;
+            font-size: 1rem;
+        }
+        
+        .plant-selector {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            display: flex;
+            gap: 10px;
+            z-index: 5;
+        }
+        
+        .plant-option {
+            width: 70px;
+            height: 70px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        
+        .plant-option.selected {
+            border-color: #ffde00;
+        }
+        
+        .plant-icon {
+            width: 40px;
+            height: 40px;
+            background-color: #6aa84f;
+            border-radius: 50%;
+            margin-bottom: 5px;
+        }
+        
+        .sunflower .plant-icon {
+            background: radial-gradient(circle, #ffde00, #e6c200);
+        }
+        
+        .peashooter .plant-icon {
+            background: radial-gradient(circle, #6aa84f, #4a752c);
+        }
+        
+        .plant-cost {
+            font-size: 0.8rem;
+            color: #ffde00;
+        }
+        
+        .sun-counter {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 15px;
+            border-radius: 10px;
+            z-index: 5;
+            font-size: 1.2rem;
+            color: #ffde00;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .grid-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .grid-cell {
+            position: absolute;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+        }
+        
+        .instructions {
+            max-width: 80%;
+            text-align: center;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        @media (max-height: 500px) {
+            .title {
+                font-size: 2rem;
+            }
+            
+            .subtitle {
+                font-size: 1.2rem;
+            }
+            
+            .btn {
+                padding: 8px 20px;
+                font-size: 1rem;
+                min-width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        
+        <!-- 网格线 -->
+        <div id="grid-lines" class="grid-lines"></div>
+        
+        <!-- 开始屏幕 -->
+        <div id="start-screen" class="screen">
+            <h1 class="title">植物大战僵尸</h1>
+            <p class="subtitle">横屏手机版</p>
+            <button id="start-btn" class="btn">开始游戏</button>
+            <div class="instructions">
+                <p>选择植物，放置在草地上防御僵尸</p>
+                <p>收集阳光购买植物，防止僵尸进入房屋</p>
+            </div>
+        </div>
+        
+        <!-- 关卡选择屏幕 -->
+        <div id="level-select-screen" class="screen hidden">
+            <h1 class="title">选择关卡</h1>
+            <button id="level-1-btn" class="btn btn-level">第一关</button>
+            <button id="level-2-btn" class="btn btn-level">第二关</button>
+            <button id="endless-btn" class="btn btn-level">无尽模式</button>
+            <button id="back-to-menu-btn" class="btn btn-back">返回主菜单</button>
+        </div>
+         <!-- 游戏界面 -->
+        <div id="game-ui" class="hidden">
+            <div class="game-info">
+                <div>关卡: <span id="level-display">1</span></div>
+                <div>僵尸数量: <span id="zombies-left">10</span></div>
+            </div>
+            <div class="sun-counter">
+                阳光: <span id="sun-count">50</span>
+            </div>
+            <div class="plant-selector">
+                <div class="plant-option sunflower selected" data-plant="sunflower">
+                    <div class="plant-icon"></div>
+                    <div class="plant-cost">50</div>
+                </div>
+                <div class="plant-option peashooter" data-plant="peashooter">
+                    <div class="plant-icon"></div>
+                    <div class="plant-cost">100</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 游戏结束屏幕 -->
+        <div id="game-over-screen" class="screen hidden">
+            <h1 class="title" id="game-over-title">游戏结束</h1>
+            <p class="subtitle" id="game-over-subtitle">僵尸吃掉了你的脑子！</p>
+            <div id="final-stats">
+                <p>得分: <span id="final-score">0</span></p>
+                <p>击杀僵尸: <span id="zombies-killed">0</span></p>
+                <p>波数: <span id="waves-completed">0</span></p>
+            </div>
+            <button id="restart-btn" class="btn">重新开始</button>
+            <button id="menu-btn" class="btn btn-back">返回主菜单</button>
+        </div>
+    </div>
+
+    <script>
+        // 游戏主逻辑
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取Canvas和上下文
+            const canvas = document.getElementById('game-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 设置Canvas尺寸
+            function resizeCanvas() {
+                canvas.width = canvas.clientWidth;
+                canvas.height = canvas.clientHeight;
+                drawGrid();
+            }
+            
+            // 绘制网格
+            function drawGrid() {
+                const gridLines = document.getElementById('grid-lines');
+                gridLines.innerHTML = '';
+                
+                const cols = 9;
+                const rows = 5;
+                const cellWidth = canvas.width / cols;
+                const cellHeight = canvas.height / rows;
+                
+                for (let row = 0; row < rows; row++) {
+                    for (let col = 0; col < cols; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'grid-cell';
+                        cell.style.width = cellWidth + 'px';
+                        cell.style.height = cellHeight + 'px';
+                        cell.style.top = (row * cellHeight) + 'px';
+                        cell.style.left = (col * cellWidth) + 'px';
+                        gridLines.appendChild(cell);
+                    }
+                }
+            }
+           // 初始化Canvas尺寸
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // 游戏状态
+            const gameState = {
+                currentScreen: 'start',
+                currentLevel: 1,
+                sun: 50,
+                selectedPlant: 'sunflower',
+                plants: [],
+                zombies: [],
+                peas: [],
+                suns: [],
+                zombieSpawnTimer: 0,
+                sunSpawnTimer: 0,
+                gameOver: false,
+                score: 0,
+                zombiesKilled: 0,
+                wavesCompleted: 0,
+                zombiesInWave: 10,
+                zombiesSpawned: 0
+            };
+            
+            // 植物和僵尸属性
+            const plantTypes = {
+                sunflower: {
+                    cost: 50,
+                    cooldown: 10,
+                    health: 100,
+                    sunProduction: 25,
+                    sunProductionRate: 10 // 秒
+                },
+                peashooter: {
+                    cost: 100,
+                    cooldown: 20,
+                    health: 100,
+                    damage: 20,
+                    fireRate: 2 // 秒
+                }
+            };
+            
+            const zombieTypes = {
+                normal: {
+                    health: 100,
+                    damage: 1,
+                    speed: 0.5,
+                    attackRate: 1 // 秒
+                }
+            };
+            
+            // 屏幕管理
+            const screens = {
+                start: document.getElementById('start-screen'),
+                levelSelect: document.getElementById('level-select-screen'),
+                game: document.getElementById('game-ui'),
+                gameOver: document.getElementById('game-over-screen')
+            };
+            
+            // 显示指定屏幕
+            function showScreen(screenName) {
+                Object.values(screens).forEach(screen => {
+                    screen.classList.add('hidden');
+                });
+                screens[screenName].classList.remove('hidden');
+                gameState.currentScreen = screenName;
+                
+                if (screenName === 'game') {
+                    resetGame();
+                    gameLoop();
+                }
+            }
+            
+            // 重置游戏状态
+            function resetGame() {
+                gameState.plants = [];
+                gameState.zombies = [];
+                gameState.peas = [];
+                gameState.suns = [];
+                gameState.zombieSpawnTimer = 0;
+                gameState.sunSpawnTimer = 0;
+                gameState.gameOver = false;
+                gameState.score = 0;
+                gameState.zombiesKilled = 0;
+                gameState.wavesCompleted = 0;
+                gameState.zombiesSpawned = 0;
+                
+                // 根据关卡设置僵尸数量
+                if (gameState.currentLevel === 1) {
+                    gameState.zombiesInWave = 10;
+                } else if (gameState.currentLevel === 2) {
+                    gameState.zombiesInWave = 15;
+                } else {
+                    // 无尽模式
+                    gameState.zombiesInWave = 20;
+                }
+                
+                // 重置阳光
+                gameState.sun = 50;
+                updateSunDisplay();
+                // 更新UI显示
+                document.getElementById('level-display').textContent = 
+                    gameState.currentLevel === 3 ? '无尽' : gameState.currentLevel;
+                document.getElementById('zombies-left').textContent = gameState.zombiesInWave;
+            }
+            
+            // 更新阳光显示
+            function updateSunDisplay() {
+                document.getElementById('sun-count').textContent = gameState.sun;
+            }
+            
+            // 植物选择
+            document.querySelectorAll('.plant-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.plant-option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+                    gameState.selectedPlant = this.dataset.plant;
+                });
+            });
+            
+            // 屏幕按钮事件
+            document.getElementById('start-btn').addEventListener('click', function() {
+                showScreen('levelSelect');
+            });
+            
+            document.getElementById('level-1-btn').addEventListener('click', function() {
+                gameState.currentLevel = 1;
+                showScreen('game');
+            });
+            
+            document.getElementById('level-2-btn').addEventListener('click', function() {
+                gameState.currentLevel = 2;
+                showScreen('game');
+            });
+            
+            document.getElementById('endless-btn').addEventListener('click', function() {
+                gameState.currentLevel = 3;
+                showScreen('game');
+            });
+            
+            document.getElementById('back-to-menu-btn').addEventListener('click', function() {
+                showScreen('start');
+            });
+            
+            document.getElementById('restart-btn').addEventListener('click', function() {
+                showScreen('game');
+            });
+            
+            document.getElementById('menu-btn').addEventListener('click', function() {
+                showScreen('start');
+            });
+            // 点击Canvas放置植物
+            canvas.addEventListener('click', function(e) {
+                if (gameState.currentScreen !== 'game' || gameState.gameOver) return;
+                
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // 检查是否点击了阳光
+                for (let i = gameState.suns.length - 1; i >= 0; i--) {
+                    const sun = gameState.suns[i];
+                    const distance = Math.sqrt((x - sun.x) ** 2 + (y - sun.y) ** 2);
+                    if (distance < 30) {
+                        gameState.sun += 25;
+                        updateSunDisplay();
+                        gameState.suns.splice(i, 1);
+                        return;
+                    }
+                }
+                
+                // 计算点击的网格位置
+                const cols = 9;
+                const rows = 5;
+                const cellWidth = canvas.width / cols;
+                const cellHeight = canvas.height / rows;
+                
+                const col = Math.floor(x / cellWidth);
+                const row = Math.floor(y / cellHeight);
+                
+                // 检查该位置是否已有植物
+                const existingPlant = gameState.plants.find(p => p.col === col && p.row === row);
+                if (existingPlant) return;
+                
+                // 检查是否有足够的阳光
+                const plantType = plantTypes[gameState.selectedPlant];
+                if (gameState.sun < plantType.cost) return;
+                
+                // 放置植物
+                gameState.plants.push({
+                    type: gameState.selectedPlant,
+                    col: col,
+                    row: row,
+                    x: col * cellWidth + cellWidth / 2,
+                    y: row * cellHeight + cellHeight / 2,
+                    health: plantType.health,
+                    cooldown: 0,
+                    lastSunProduction: 0,
+                    lastShot: 0
+                });
+                
+                // 扣除阳光
+                gameState.sun -= plantType.cost;
+                updateSunDisplay();
+            });
+            
+            // 游戏主循环
+            let lastTime = 0;
+            function gameLoop(timestamp) {
+                if (!lastTime) lastTime = timestamp;
+                const deltaTime = (timestamp - lastTime) / 1000; // 转换为秒
+                lastTime = timestamp;
+                
+                if (gameState.currentScreen === 'game' && !gameState.gameOver) {
+                    updateGame(deltaTime);
+                    drawGame();
+                    requestAnimationFrame(gameLoop);
+                }
+            }
+            
+            // 更新游戏状态
+            function updateGame(deltaTime) {
+                // 生成阳光
+                gameState.sunSpawnTimer += deltaTime;
+                if (gameState.sunSpawnTimer >= 5) {
+                    spawnSun();
+                    gameState.sunSpawnTimer = 0;
+                }
+                
+                // 更新阳光
+                updateSuns(deltaTime);
+                // 生成僵尸
+                if (gameState.zombiesSpawned < gameState.zombiesInWave) {
+                    gameState.zombieSpawnTimer += deltaTime;
+                    const spawnInterval = gameState.currentLevel === 1 ? 5 : 
+                                         gameState.currentLevel === 2 ? 4 : 3;
+                    
+                    if (gameState.zombieSpawnTimer >= spawnInterval) {
+                        spawnZombie();
+                        gameState.zombieSpawnTimer = 0;
+                        gameState.zombiesSpawned++;
+                        document.getElementById('zombies-left').textContent = 
+                            gameState.zombiesInWave - gameState.zombiesSpawned;
+                    }
+                }
+                
+                // 更新植物
+                updatePlants(deltaTime);
+                
+                // 更新僵尸
+                updateZombies(deltaTime);
+                
+                // 更新豌豆
+                updatePeas(deltaTime);
+                
+                // 检查游戏结束条件
+                checkGameOver();
+                
+                // 无尽模式：如果当前波次僵尸全部生成且被消灭，生成下一波
+                if (gameState.currentLevel === 3 && 
+                    gameState.zombiesSpawned >= gameState.zombiesInWave && 
+                    gameState.zombies.length === 0) {
+                    gameState.wavesCompleted++;
+                    gameState.zombiesInWave += 5;
+                    gameState.zombiesSpawned = 0;
+                    document.getElementById('zombies-left').textContent = gameState.zombiesInWave;
+                }
+            }
+            
+            // 生成阳光
+            function spawnSun() {
+                const x = Math.random() * (canvas.width - 60) + 30;
+                gameState.suns.push({
+                    x: x,
+                    y: -30,
+                    targetY: Math.random() * (canvas.height - 100) + 50,
+                    collected: false,
+                    value: 25
+                });
+            }
+            
+            // 更新阳光
+            function updateSuns(deltaTime) {
+                for (let i = gameState.suns.length - 1; i >= 0; i--) {
+                    const sun = gameState.suns[i];
+                    
+                    if (!sun.collected && sun.y < sun.targetY) {
+                        sun.y += 50 * deltaTime;
+                    }
+                    
+                    // 移除屏幕外的阳光
+                    if (sun.y > canvas.height + 30) {
+                        gameState.suns.splice(i, 1);
+                    }
+                }
+            }
+            
+            // 生成僵尸
+            function spawnZombie() {
+                const rows = 5;
+                const row = Math.floor(Math.random() * rows);
+                const cellHeight = canvas.height / rows;
+                
+                gameState.zombies.push({
+                    type: 'normal',
+                    row: row,
+                    x: canvas.width + 30,
+                    y: row * cellHeight + cellHeight / 2,
+                    health: zombieTypes.normal.health,
+                    speed: zombieTypes.normal.speed,
+                    attacking: false,
+                    attackCooldown: 0,
+                    targetPlant: null
+                });
+            }
+            // 更新植物
+            function updatePlants(deltaTime) {
+                for (let i = 0; i < gameState.plants.length; i++) {
+                    const plant = gameState.plants[i];
+                    
+                    // 向日葵产生阳光
+                    if (plant.type === 'sunflower') {
+                        plant.lastSunProduction += deltaTime;
+                        if (plant.lastSunProduction >= plantTypes.sunflower.sunProductionRate) {
+                            gameState.sun += plantTypes.sunflower.sunProduction;
+                            updateSunDisplay();
+                            plant.lastSunProduction = 0;
+                        }
+                    }
+                    
+                    // 豌豆射手发射豌豆
+                    if (plant.type === 'peashooter') {
+                        plant.lastShot += deltaTime;
+                        if (plant.lastShot >= 1 / plantTypes.peashooter.fireRate) {
+                            // 检查该行是否有僵尸
+                            const zombieInRow = gameState.zombies.find(z => z.row === plant.row);
+                            if (zombieInRow) {
+                                gameState.peas.push({
+                                    x: plant.x + 20,
+                                    y: plant.y,
+                                    row: plant.row,
+                                    damage: plantTypes.peashooter.damage,
+                                    speed: 5
+                                });
+                                plant.lastShot = 0;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 更新僵尸
+            function updateZombies(deltaTime) {
+                for (let i = gameState.zombies.length - 1; i >= 0; i--) {
+                    const zombie = gameState.zombies[i];
+                    
+                    // 检查是否在攻击植物
+                    const plantInFront = gameState.plants.find(p => 
+                        p.row === zombie.row && 
+                        Math.abs(p.x - zombie.x) < 50
+                    );
+                    
+                    if (plantInFront) {
+                        zombie.attacking = true;
+                        zombie.targetPlant = plantInFront;
+                        zombie.attackCooldown += deltaTime;
+                        
+                        if (zombie.attackCooldown >= 1 / zombieTypes.normal.attackRate) {
+                            plantInFront.health -= zombieTypes.normal.damage;
+                            zombie.attackCooldown = 0;
+                            
+                            if (plantInFront.health <= 0) {
+                                const plantIndex = gameState.plants.indexOf(plantInFront);
+                                gameState.plants.splice(plantIndex, 1);
+                                zombie.attacking = false;
+                                zombie.targetPlant = null;
+                            }
+                        }
+                    } else {
+                        zombie.attacking = false;
+                        zombie.targetPlant = null;
+                        zombie.x -= zombie.speed;
+                    }
+                    // 检查僵尸是否到达左边界
+                    if (zombie.x < -30) {
+                        gameState.gameOver = true;
+                        endGame(false);
+                    }
+                    
+                    // 检查僵尸是否死亡
+                    if (zombie.health <= 0) {
+                        gameState.zombies.splice(i, 1);
+                        gameState.zombiesKilled++;
+                        gameState.score += 10;
+                    }
+                }
+            }
+            
+            // 更新豌豆
+            function updatePeas(deltaTime) {
+                for (let i = gameState.peas.length - 1; i >= 0; i--) {
+                    const pea = gameState.peas[i];
+                    pea.x += pea.speed;
+                    
+                    // 检查豌豆是否击中僵尸
+                    const zombieHit = gameState.zombies.find(z => 
+                        z.row === pea.row && 
+                        Math.abs(z.x - pea.x) < 30
+                    );
+                    
+                    if (zombieHit) {
+                        zombieHit.health -= pea.damage;
+                        gameState.peas.splice(i, 1);
+                        continue;
+                    }
+                    
+                    // 移除屏幕外的豌豆
+                    if (pea.x > canvas.width + 30) {
+                        gameState.peas.splice(i, 1);
+                    }
+                }
+            }
+            
+            // 检查游戏结束条件
+            function checkGameOver() {
+                // 检查是否所有僵尸都被消灭
+                if (gameState.zombiesSpawned >= gameState.zombiesInWave && 
+                    gameState.zombies.length === 0 && 
+                    gameState.currentLevel !== 3) {
+                    endGame(true);
+                }
+            }
+            
+            // 游戏结束
+            function endGame(victory) {
+                gameState.gameOver = true;
+                
+                document.getElementById('game-over-title').textContent = 
+                    victory ? '胜利!' : '游戏结束';
+                document.getElementById('game-over-subtitle').textContent = 
+                    victory ? '你成功防御了僵尸!' : '僵尸吃掉了你的脑子!';
+                
+                document.getElementById('final-score').textContent = gameState.score;
+                document.getElementById('zombies-killed').textContent = gameState.zombiesKilled;
+                document.getElementById('waves-completed').textContent = gameState.wavesCompleted;
+                
+                showScreen('gameOver');
+            }
+            
+            // 绘制游戏
+            function drawGame() {
+                // 清除画布
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // 绘制背景
+                ctx.fillStyle = '#4a752c';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // 绘制草地网格
+                const cols = 9;
+                const rows = 5;
+                const cellWidth = canvas.width / cols;
+                const cellHeight = canvas.height / rows;
+                
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                ctx.lineWidth = 1;
+                
+                for (let row = 0; row < rows; row++) {
+                    for (let col = 0; col < cols; col++) {
+                        ctx.strokeRect(col * cellWidth, row * cellHeight, cellWidth, cellHeight);
+                    }
+                }
+                // 绘制阳光
+                ctx.fillStyle = '#ffde00';
+                for (const sun of gameState.suns) {
+                    ctx.beginPath();
+                    ctx.arc(sun.x, sun.y, 20, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // 绘制阳光射线
+                    for (let i = 0; i < 8; i++) {
+                        const angle = (i / 8) * Math.PI * 2;
+                        const startX = sun.x + Math.cos(angle) * 15;
+                        const startY = sun.y + Math.sin(angle) * 15;
+                        const endX = sun.x + Math.cos(angle) * 30;
+                        const endY = sun.y + Math.sin(angle) * 30;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(startX, startY);
+                        ctx.lineTo(endX, endY);
+                        ctx.lineWidth = 3;
+                        ctx.stroke();
+                    }
+                }
+                
+                // 绘制植物
+                for (const plant of gameState.plants) {
+                    if (plant.type === 'sunflower') {
+                        // 绘制向日葵
+                        ctx.fillStyle = '#ffde00';
+                        ctx.beginPath();
+                        ctx.arc(plant.x, plant.y, 20, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // 绘制向日葵中心
+                        ctx.fillStyle = '#e6c200';
+                        ctx.beginPath();
+                        ctx.arc(plant.x, plant.y, 12, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // 绘制向日葵花瓣
+                        ctx.strokeStyle = '#ffde00';
+                        ctx.lineWidth = 8;
+                        for (let i = 0; i < 8; i++) {
+                            const angle = (i / 8) * Math.PI * 2;
+                            const startX = plant.x + Math.cos(angle) * 15;
+                            const startY = plant.y + Math.sin(angle) * 15;
+                            const endX = plant.x + Math.cos(angle) * 30;
+                            const endY = plant.y + Math.sin(angle) * 30;
+                            
+                            ctx.beginPath();
+                            ctx.moveTo(startX, startY);
+                            ctx.lineTo(endX, endY);
+                            ctx.stroke();
+                        }
+                    } else if (plant.type === 'peashooter') {
+                    // 绘制豌豆射手
+                        ctx.fillStyle = '#6aa84f';
+                        ctx.beginPath();
+                        ctx.arc(plant.x, plant.y, 20, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // 绘制豌豆射手嘴巴
+                        ctx.fillStyle = '#4a752c';
+                        ctx.beginPath();
+                        ctx.arc(plant.x + 10, plant.y, 8, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    
+                    // 绘制植物生命值
+                    const healthPercent = plant.health / plantTypes[plant.type].health;
+                    ctx.fillStyle = healthPercent > 0.5 ? '#00ff00' : 
+                                   healthPercent > 0.25 ? '#ffff00' : '#ff0000';
+                    ctx.fillRect(plant.x - 20, plant.y - 30, 40 * healthPercent, 5);
+                }
+                
+                // 绘制僵尸
+                for (const zombie of gameState.zombies) {
+                    // 绘制僵尸身体
+                    ctx.fillStyle = '#666666';
+                    ctx.fillRect(zombie.x - 20, zombie.y - 30, 40, 60);
+                    
+                    // 绘制僵尸头
+                    ctx.fillStyle = '#999999';
+                    ctx.beginPath();
+                    ctx.arc(zombie.x, zombie.y - 40, 15, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // 绘制僵尸眼睛
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(zombie.x - 5, zombie.y - 42, 3, 0, Math.PI * 2);
+                    ctx.arc(zombie.x + 5, zombie.y - 42, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // 绘制僵尸嘴巴
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(zombie.x, zombie.y - 35, 8, 0, Math.PI);
+                    ctx.stroke();
+                    
+                    // 绘制僵尸生命值
+                    const healthPercent = zombie.health / zombieTypes.normal.health;
+                    ctx.fillStyle = healthPercent > 0.5 ? '#00ff00' : 
+                                   healthPercent > 0.25 ? '#ffff00' : '#ff0000';
+                    ctx.fillRect(zombie.x - 20, zombie.y - 50, 40 * healthPercent, 5);
+                }
+                
+                // 绘制豌豆
+                ctx.fillStyle = '#6aa84f';
+                for (const pea of gameState.peas) {
+                    ctx.beginPath();
+                    ctx.arc(pea.x, pea.y, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            // 初始化游戏
+            showScreen('start');
+        });
+    </script>
+</body>
+</html>
